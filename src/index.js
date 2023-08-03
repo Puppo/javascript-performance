@@ -1,30 +1,49 @@
 import { performance } from 'perf_hooks';
 
-const length = 1e7;
+const length = 10;
 
-performance.mark('start for');
-const resultWithFor = []
-for (let i = 0; i < length; i++) {
-  resultWithFor.push(i);
+async function doingSomething(value) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(value);
+    }, 300);
+  });
 }
-performance.mark('end for');
-performance.measure('For', 'start for', 'end for');
-const [measureFor] = performance.getEntriesByName('For');
 
-performance.mark('start arrayFillMap');
-const arrayFillMap = Array(length).fill().map((_, i) => i);
-performance.mark('end arrayFillMap');
-performance.measure('ArrayFillMap', 'start arrayFillMap', 'end arrayFillMap');
-const [measureArrayFillMap] = performance.getEntriesByName('ArrayFillMap');
+async function asyncTest() {
+  performance.mark('start async');
+  let res = [];
+  for (let i = 0; i < length; i++)
+    res.push(await doingSomething(i));
 
-performance.mark('start keys');
-const arrayKeys = [...Array(length).keys()];
-performance.mark('end keys');
-performance.measure('Keys', 'start keys', 'end keys');
-const [measureKeys] = performance.getEntriesByName('Keys');
+  performance.mark('end async');
+  performance.measure('Async', 'start async', 'end async');
+  return performance.getEntriesByName('Async');
+}
 
-console.log({
-  measureFor,
-  measureArrayFillMap,
-  measureKeys,
-});
+async function promiseAllTest() {
+  performance.mark('start PromiseAll');
+  let promises = [];
+  for (let i = 0; i < length; i++) {
+    promises.push(doingSomething(i));
+  }
+
+  const res = await Promise.all(promises);
+
+  performance.mark('end PromiseAll');
+  performance.measure('PromiseAll', 'start PromiseAll', 'end PromiseAll');
+  return performance.getEntriesByName('PromiseAll');
+}
+
+async function main() {
+  const [measureAsync] = await asyncTest();
+  const [measurePromiseAll] = await promiseAllTest();
+
+
+  console.log({
+    measureAsync,
+    measurePromiseAll,
+  });
+};
+
+main();
